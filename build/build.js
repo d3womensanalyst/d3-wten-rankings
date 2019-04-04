@@ -138,6 +138,16 @@ var sketch = function (p) {
     var teamDict = {};
     var rankingsTestData = {};
     var radius;
+    var sidePadding;
+    var chartWidth;
+    var infoColumnWidth;
+    var infoColumnLeft;
+    var yearHorizontalSpacing;
+    var interiorPadding;
+    var infoColumnCenter;
+    var roboto;
+    var robotoBold;
+    var robotoThin;
     function getColor(team) {
         if (!!colors[team]) {
             return colors[team];
@@ -145,26 +155,61 @@ var sketch = function (p) {
         colors[team] = [[255, 255, 255], [255, 255, 255]];
         return colors[team];
     }
+    function drawHeader() {
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(18);
+        p.textFont(robotoBold);
+        p.textStyle(p.BOLD);
+        p.text("DIII Women's Tennis Rankings:", infoColumnCenter, 70);
+        p.text("2009-2019", infoColumnCenter, 95);
+    }
     function drawTeamInfo(team) {
         p.fill("#000000");
-        p.textSize(14);
-        p.text(team, p.windowWidth - 200, 100);
+        p.textSize(15);
         var teamRankings = teamDict[team];
         console.log("Team Rankings", teamRankings);
         var ranks = Object.values(teamRankings);
         console.log("RANKS", ranks);
-        p.text("Average Rank: " + average(ranks).toFixed(1), p.windowWidth - 200, 200);
-        p.text("Standard Dev: " + standardDeviation(ranks).toFixed(1), p.windowWidth - 200, 240);
+        p.textAlign(p.LEFT, p.CENTER);
+        p.textFont(robotoBold);
+        p.text(team, infoColumnLeft + 15, 160);
+        p.textFont(roboto);
+        var currentRankLabel = "Current Rank: ";
+        p.text(currentRankLabel, infoColumnLeft + 15, 200);
+        var averageRankLabel = "Average Rank: ";
+        p.text(averageRankLabel, infoColumnLeft + 15, 230);
+        var yearChangeLabel = "Change from '18 to '19: ";
+        p.text(yearChangeLabel, infoColumnLeft + 15, 260);
+        p.textFont(robotoBold);
+        p.text(teamRankings["2019"] || "NR", infoColumnLeft + 15 + p.textWidth(currentRankLabel) + 10, 200);
+        p.text(average(ranks).toFixed(1), infoColumnLeft + 15 + p.textWidth(averageRankLabel) + 10, 230);
         var pastYearChange = getPastYearChange(teamRankings["2018"], teamRankings["2019"]);
-        p.text("Change from '18 to '19: " + pastYearChange || "N/A", p.windowWidth - 200, 280);
+        var difference = !pastYearChange || pastYearChange.startsWith("-")
+            ? pastYearChange
+            : "+" + pastYearChange;
+        p.text(difference || "N/A", infoColumnLeft + 15 + p.textWidth(yearChangeLabel) + 10, 260);
     }
     p.preload = function () {
         data = p.loadTable("data/rankings5.csv", "header");
         colorsData = p.loadTable("data/colors4.csv");
         rankingsTestData = p.loadTable("data/rankingstest.csv");
+        roboto = p.loadFont("font/Roboto/Roboto-Regular.ttf");
+        robotoThin = p.loadFont("font/Roboto/Roboto-Thin.ttf");
+        robotoBold = p.loadFont("font/Roboto/Roboto-Medium.ttf");
     };
     p.setup = function () {
-        radius = (p.windowHeight - 50 - 39 * 6) / 40;
+        p.textFont(roboto);
+        sidePadding = p.windowWidth * 0.06;
+        interiorPadding = p.windowWidth * 0.04;
+        chartWidth = p.windowWidth * 0.62;
+        infoColumnWidth = p.windowWidth * 0.22;
+        infoColumnLeft = sidePadding + chartWidth + interiorPadding;
+        infoColumnCenter = infoColumnLeft + infoColumnWidth / 2;
+        radius = (p.windowHeight - 50 - 39 * 6 - 8) / 40;
+        console.log("RADIUS", radius);
+        console.log("chart width", chartWidth);
+        yearHorizontalSpacing = (chartWidth - radius) / 10;
+        console.log("year horizontal spacing", yearHorizontalSpacing);
         p.createCanvas(p.windowWidth, p.windowHeight);
         var testranks = rankingsTestData.getColumn(0);
         ["2009"].forEach(function (year) {
@@ -185,7 +230,6 @@ var sketch = function (p) {
                     else {
                         teamDict[team] = (_a = {}, _a[year] = rank, _a);
                     }
-                    console.log("teamDict", teamDict);
                 }
             });
             rankingsDictByYear[year] = yearDict;
@@ -200,7 +244,7 @@ var sketch = function (p) {
         }
         var _loop_1 = function () {
             var rankingsForYear = Object.entries(rankingsDictByYear[YEARS[i]]);
-            var x = 200 + i * 85;
+            var x = sidePadding + radius / 2 + i * yearHorizontalSpacing;
             var _loop_2 = function () {
                 var y = 50 + j * (radius + 6);
                 var teamsStr = rankingsForYear[j][1];
@@ -223,12 +267,14 @@ var sketch = function (p) {
     };
     p.draw = function () {
         p.background(255);
+        drawHeader();
         circlesList.forEach(function (circle) { return circle.draw(); });
+        p.textFont(roboto);
         YEARS.forEach(function (year, index) {
             p.textAlign(p.CENTER, p.CENTER);
             p.fill("#000000");
             p.textSize(14);
-            p.text("'" + year.substring(2, 4), 200 + index * 85, 20);
+            p.text("'" + year.substring(2, 4), sidePadding + radius / 2 + index * yearHorizontalSpacing, 20);
         });
         if (selectedTeam) {
             drawTeamInfo(selectedTeam);
@@ -269,6 +315,7 @@ var sketch = function (p) {
             p.arc(this.x, this.y, drawRadius, drawRadius, (3 * p.PI) / 4, -p.PI / 4, p.OPEN);
             p.fill(color[1][0], color[1][1], color[1][2], transparency);
             p.arc(this.x, this.y, drawRadius, drawRadius, -p.PI / 4, (3 * p.PI) / 4, p.OPEN);
+            p.textFont(roboto);
             if (isSelected) {
                 p.fill(150, 150, 150);
                 p.textAlign(p.RIGHT, p.CENTER);

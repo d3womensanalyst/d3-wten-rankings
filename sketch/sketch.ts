@@ -52,6 +52,16 @@ var sketch = (p: p5) => {
   let teamDict: any = {};
   let rankingsTestData: any = {};
   let radius: number;
+  let sidePadding: number;
+  let chartWidth: number;
+  let infoColumnWidth: number;
+  let infoColumnLeft: number;
+  let yearHorizontalSpacing: number;
+  let interiorPadding: number;
+  let infoColumnCenter: number;
+  let roboto: any;
+  let robotoBold: any;
+  let robotoThin: any;
 
   function getColor(team: string) {
     if (!!colors[team]) {
@@ -64,34 +74,57 @@ var sketch = (p: p5) => {
     // return hex;
   }
 
+  function drawHeader() {
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(18);
+    p.textFont(robotoBold);
+    p.textStyle(p.BOLD);
+    p.text("DIII Women's Tennis Rankings:", infoColumnCenter, 70);
+    p.text("2009-2019", infoColumnCenter, 95);
+  }
+
   function drawTeamInfo(team: string) {
     p.fill("#000000");
-    p.textSize(14);
-    p.text(team, p.windowWidth - 200, 100);
-    // console.log("team dict", teamDict);
+    p.textSize(15);
 
     const teamRankings = teamDict[team] as any;
     console.log("Team Rankings", teamRankings);
     const ranks = Object.values(teamRankings) as number[];
     console.log("RANKS", ranks);
+    p.textAlign(p.LEFT, p.CENTER);
+    // p.textStyle(p.BOLD);
+    p.textFont(robotoBold);
+    p.text(team, infoColumnLeft + 15, 160);
+    p.textFont(roboto);
+    const currentRankLabel = "Current Rank: ";
+    p.text(currentRankLabel, infoColumnLeft + 15, 200);
+    const averageRankLabel = "Average Rank: ";
+    p.text(averageRankLabel, infoColumnLeft + 15, 230);
+    const yearChangeLabel = "Change from '18 to '19: ";
+    p.text(yearChangeLabel, infoColumnLeft + 15, 260);
+    p.textFont(robotoBold);
     p.text(
-      "Average Rank: " + average(ranks).toFixed(1),
-      p.windowWidth - 200,
+      teamRankings["2019"] || "NR",
+      infoColumnLeft + 15 + p.textWidth(currentRankLabel) + 10,
       200
     );
     p.text(
-      "Standard Dev: " + standardDeviation(ranks).toFixed(1),
-      p.windowWidth - 200,
-      240
+      average(ranks).toFixed(1),
+      infoColumnLeft + 15 + p.textWidth(averageRankLabel) + 10,
+      230
     );
     const pastYearChange = getPastYearChange(
       teamRankings["2018"],
       teamRankings["2019"]
     );
+    const difference =
+      !pastYearChange || pastYearChange.startsWith("-")
+        ? pastYearChange
+        : "+" + pastYearChange;
     p.text(
-      "Change from '18 to '19: " + pastYearChange || "N/A",
-      p.windowWidth - 200,
-      280
+      difference || "N/A",
+      infoColumnLeft + 15 + p.textWidth(yearChangeLabel) + 10,
+      260
     );
   }
 
@@ -99,10 +132,25 @@ var sketch = (p: p5) => {
     data = p.loadTable("data/rankings5.csv", "header") as any;
     colorsData = p.loadTable("data/colors4.csv") as any;
     rankingsTestData = p.loadTable("data/rankingstest.csv") as any;
+
+    roboto = p.loadFont("font/Roboto/Roboto-Regular.ttf");
+    robotoThin = p.loadFont("font/Roboto/Roboto-Thin.ttf");
+    robotoBold = p.loadFont("font/Roboto/Roboto-Medium.ttf");
   };
 
   p.setup = () => {
-    radius = (p.windowHeight - 50 - 39 * 6) / 40;
+    p.textFont(roboto);
+    sidePadding = p.windowWidth * 0.06;
+    interiorPadding = p.windowWidth * 0.04;
+    chartWidth = p.windowWidth * 0.62;
+    infoColumnWidth = p.windowWidth * 0.22;
+    infoColumnLeft = sidePadding + chartWidth + interiorPadding;
+    infoColumnCenter = infoColumnLeft + infoColumnWidth / 2;
+    radius = (p.windowHeight - 50 - 39 * 6 - 8) / 40;
+    console.log("RADIUS", radius);
+    console.log("chart width", chartWidth);
+    yearHorizontalSpacing = (chartWidth - radius) / 10;
+    console.log("year horizontal spacing", yearHorizontalSpacing);
     // console.log("RADIUS", radius);
     p.createCanvas(p.windowWidth, p.windowHeight);
 
@@ -129,7 +177,7 @@ var sketch = (p: p5) => {
           } else {
             teamDict[team] = { [year]: rank };
           }
-          console.log("teamDict", teamDict);
+          // console.log("teamDict", teamDict);
           // console.log(teamDict);
           // teamDict[year] = ranks[index];
         }
@@ -154,7 +202,7 @@ var sketch = (p: p5) => {
     for (var i = 0; i < YEARS.length; i++) {
       const rankingsForYear = Object.entries(rankingsDictByYear[YEARS[i]]);
       //   console.log("rankings for year", rankingsForYear);
-      const x = 200 + i * 85;
+      const x = sidePadding + radius / 2 + i * yearHorizontalSpacing;
 
       for (var j = 0; j < rankingsForYear.length; j++) {
         // const y = 50 + j * radius + 6;
@@ -189,14 +237,20 @@ var sketch = (p: p5) => {
 
   p.draw = () => {
     p.background(255);
+    drawHeader();
     // console.log("DRAW");
     circlesList.forEach(circle => circle.draw());
 
+    p.textFont(roboto);
     YEARS.forEach((year, index) => {
       p.textAlign(p.CENTER, p.CENTER);
       p.fill("#000000");
       p.textSize(14);
-      p.text(`'` + year.substring(2, 4), 200 + index * 85, 20);
+      p.text(
+        `'` + year.substring(2, 4),
+        sidePadding + radius / 2 + index * yearHorizontalSpacing,
+        20
+      );
     });
 
     if (selectedTeam) {
@@ -272,6 +326,7 @@ var sketch = (p: p5) => {
         (3 * p.PI) / 4,
         p.OPEN
       );
+      p.textFont(roboto);
       if (isSelected) {
         p.fill(150, 150, 150);
         p.textAlign(p.RIGHT, p.CENTER);
