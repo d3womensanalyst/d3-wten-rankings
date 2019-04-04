@@ -184,7 +184,9 @@ var sketch = function (p) {
         p.text(teamRankings["2019"] || "NR", infoColumnLeft + 15 + p.textWidth(currentRankLabel) + 10, 200);
         p.text(average(ranks).toFixed(1), infoColumnLeft + 15 + p.textWidth(averageRankLabel) + 10, 230);
         var pastYearChange = getPastYearChange(teamRankings["2018"], teamRankings["2019"]);
-        var difference = !pastYearChange || pastYearChange.startsWith("-")
+        var difference = !pastYearChange ||
+            pastYearChange.startsWith("-") ||
+            pastYearChange.startsWith(">")
             ? pastYearChange
             : "+" + pastYearChange;
         p.text(difference || "N/A", infoColumnLeft + 15 + p.textWidth(yearChangeLabel) + 10, 260);
