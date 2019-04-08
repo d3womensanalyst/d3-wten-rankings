@@ -1,98 +1,3 @@
-var Morph = (function () {
-    function Morph() {
-    }
-    Morph.prototype.setup = function (p) {
-        this.shapes = [];
-        this.currentShape = 0;
-        this.shapes.push({ points: Shapes.circle(p, 100), color: p.color('#009CDF') });
-        this.shapes.push({ points: Shapes.circle(p, 150), color: p.color(255, 204, 0) });
-        this.shapes.push({ points: Shapes.square(p, 50), color: p.color(175, 100, 220) });
-        this.morph = new Array();
-        var highestCount = 0;
-        for (var i = 0; i < this.shapes.length; i++) {
-            highestCount = Math.max(highestCount, this.shapes[i].points.length);
-        }
-        for (var i = 0; i < highestCount; i++) {
-            this.morph.push(new p5.Vector());
-        }
-    };
-    Morph.prototype.recalc = function (p) {
-        var totalDistance = 0;
-        var points = this.shapes[this.currentShape].points;
-        for (var i = 0; i < points.length; i++) {
-            var v1 = points[i];
-            var v2 = this.morph[i];
-            v2.lerp(v1, 0.1);
-            totalDistance += p5.Vector.dist(v1, v2);
-        }
-        if (totalDistance < 0.1) {
-            this.currentShape++;
-            if (this.currentShape >= this.shapes.length) {
-                this.currentShape = 0;
-            }
-        }
-    };
-    Morph.prototype.draw = function (p) {
-        this.recalc(p);
-        var color = this.shapes[this.currentShape].color;
-        var points = this.shapes[this.currentShape].points;
-        p.translate(p.width / 2, p.height / 2);
-        p.strokeWeight(4);
-        p.beginShape();
-        p.noFill();
-        p.stroke(color);
-        for (var i = 0; i < points.length; i++) {
-            var v = this.morph[i];
-            p.vertex(v.x, v.y);
-        }
-        p.endShape(p.CLOSE);
-    };
-    return Morph;
-}());
-var Shapes = (function () {
-    function Shapes() {
-    }
-    Shapes.circle = function (p, size) {
-        var points = new Array();
-        for (var angle = 0; angle < 360; angle += 9) {
-            var v = p5.Vector.fromAngle(p.radians(angle - 135));
-            v.mult(size);
-            points.push(v);
-        }
-        return points;
-    };
-    Shapes.square = function (p, size) {
-        var points = new Array();
-        for (var x = -size; x < size; x += 10) {
-            points.push(p.createVector(x, -size));
-        }
-        for (var y = -size; y < size; y += 10) {
-            points.push(p.createVector(size, y));
-        }
-        for (var x = size; x > -size; x -= 10) {
-            points.push(p.createVector(x, size));
-        }
-        for (var y = size; y > -size; y -= 10) {
-            points.push(p.createVector(-size, y));
-        }
-        return points;
-    };
-    Shapes.star = function (p, x, y, radius1, radius2, npoints) {
-        var angle = p.TWO_PI / npoints;
-        var halfAngle = angle / 2.0;
-        var points = new Array();
-        for (var a = 0; a < p.TWO_PI; a += angle) {
-            var sx = x + p.cos(a) * radius2;
-            var sy = y + p.sin(a) * radius2;
-            points.push(p.createVector(sx, sy));
-            sx = x + p.cos(a + halfAngle) * radius1;
-            sy = y + p.sin(a + halfAngle) * radius1;
-            points.push(p.createVector(sx, sy));
-        }
-        return points;
-    };
-    return Shapes;
-}());
 var _a;
 var YEARS = [
     "2009",
@@ -196,9 +101,6 @@ var CONFERENCE_LIST = [
     "WIAC"
 ];
 var REGION_LIST = ["Atlantic South", "Central", "Northeast", "West"];
-var CONFERENCES = {
-    NESCAC: ["Williams", "Wesleyan", "Amherst"]
-};
 var average = function (list) {
     return list.reduce(function (prev, curr) { return prev + curr; }) / list.length;
 };
@@ -244,7 +146,6 @@ var sketch = function (p) {
     var selectedConference;
     var teamImages = {};
     var whiteTeamImages = {};
-    var teamsData = {};
     var conferenceSelect;
     var regionSelect;
     function getColor(team) {
@@ -293,7 +194,6 @@ var sketch = function (p) {
         data = p.loadTable("data/rankings5.csv", "header");
         colorsData = p.loadTable("data/colors4.csv");
         rankingsTestData = p.loadTable("data/rankingstest.csv");
-        teamsData = p.loadTable("data/teams.csv");
         Object.keys(TEAMS).forEach(function (team) {
             teamImages[team] = p.loadImage("img/" + team + ".png");
             whiteTeamImages[team] = p.loadImage("img/" + team + "-white.png");
