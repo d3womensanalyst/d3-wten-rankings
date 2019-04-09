@@ -83,38 +83,27 @@ var CONFERENCE_LIST = [
     "NESCAC",
     "UAA",
     "SCIAC",
-    "NEWMAC",
-    "Liberty League",
-    "Northwest",
-    "CAC",
-    "ASC",
-    "SAA",
-    "NJAC",
-    "ARC",
-    "ODAC",
-    "NCAC",
-    "MIAA",
-    "MIAC",
     "Centennial",
+    "MIAC",
+    "NCAC",
+    "NEWMAC",
+    "ASC",
+    "CAC",
+    "Northwest",
+    "SAA",
+    "ARC",
+    "Liberty League",
+    "MIAA",
     "SCAC",
     "CCIW",
+    "NJAC",
+    "ODAC",
     "WIAC"
 ];
 var REGION_LIST = ["Atlantic South", "Central", "Northeast", "West"];
 var average = function (list) {
     return list.reduce(function (prev, curr) { return prev + curr; }) / list.length;
 };
-function standardDeviation(values) {
-    var avg = average(values);
-    var squareDiffs = values.map(function (value) {
-        var diff = value - avg;
-        var sqrDiff = diff * diff;
-        return sqrDiff;
-    });
-    var avgSquareDiff = average(squareDiffs);
-    var stdDev = Math.sqrt(avgSquareDiff);
-    return stdDev;
-}
 function getPastYearChange(lastYearRank, thisYearRank) {
     if (!thisYearRank)
         return "N/A";
@@ -131,7 +120,6 @@ var sketch = function (p) {
     var selectedTeam;
     var circlesList = [];
     var teamDict = {};
-    var rankingsTestData = {};
     var radius;
     var sidePadding;
     var chartWidth;
@@ -142,8 +130,6 @@ var sketch = function (p) {
     var infoColumnCenter;
     var roboto;
     var robotoBold;
-    var robotoThin;
-    var selectedConference;
     var teamImages = {};
     var whiteTeamImages = {};
     var conferenceSelect;
@@ -166,9 +152,7 @@ var sketch = function (p) {
         p.fill("#000000");
         p.textSize(15);
         var teamRankings = teamDict[team];
-        console.log("Team Rankings", teamRankings);
         var ranks = Object.values(teamRankings);
-        console.log("RANKS", ranks);
         p.textAlign(p.LEFT, p.CENTER);
         p.textFont(robotoBold);
         p.text(team, infoColumnLeft + 15, 220);
@@ -193,17 +177,18 @@ var sketch = function (p) {
     p.preload = function () {
         data = p.loadTable("data/rankings5.csv", "header");
         colorsData = p.loadTable("data/colors4.csv");
-        rankingsTestData = p.loadTable("data/rankingstest.csv");
         Object.keys(TEAMS).forEach(function (team) {
             teamImages[team] = p.loadImage("img/" + team + ".png");
             whiteTeamImages[team] = p.loadImage("img/" + team + "-white.png");
         });
         roboto = p.loadFont("font/Roboto/Roboto-Regular.ttf");
-        robotoThin = p.loadFont("font/Roboto/Roboto-Thin.ttf");
         robotoBold = p.loadFont("font/Roboto/Roboto-Medium.ttf");
     };
-    p.setup = function () {
-        p.textFont(roboto);
+    window.addEventListener("resize", function () {
+        p.resizeCanvas(p.windowWidth, p.windowHeight);
+        initialSetup();
+    });
+    function initialSetup() {
         sidePadding = p.windowWidth * 0.06;
         interiorPadding = p.windowWidth * 0.04;
         chartWidth = p.windowWidth * 0.62;
@@ -212,46 +197,9 @@ var sketch = function (p) {
         infoColumnCenter = infoColumnLeft + infoColumnWidth / 2;
         radius = (p.windowHeight - 50 - 39 * 6 - 8) / 40;
         yearHorizontalSpacing = (chartWidth - radius) / 10;
-        p.createCanvas(p.windowWidth, p.windowHeight);
-        conferenceSelect = p.createSelect();
         conferenceSelect.position(infoColumnLeft + 15, 130);
-        conferenceSelect.option("All Conferences");
-        CONFERENCE_LIST.forEach(function (conference) {
-            conferenceSelect.option(conference);
-        });
-        regionSelect = p.createSelect();
         regionSelect.position(infoColumnLeft + 15, 160);
-        regionSelect.option("All Regions");
-        REGION_LIST.forEach(function (region) {
-            regionSelect.option(region);
-        });
-        var ranks = data.getColumn("Rank");
-        YEARS.forEach(function (year) {
-            var column = data.getColumn(year);
-            var yearDict = {};
-            column.forEach(function (team, index) {
-                var _a;
-                if (!!team) {
-                    var rank = parseInt(ranks[index], 10);
-                    yearDict[ranks[index]] = team;
-                    if (teamDict[team]) {
-                        teamDict[team][year] = rank;
-                    }
-                    else {
-                        teamDict[team] = (_a = {}, _a[year] = rank, _a);
-                    }
-                }
-            });
-            rankingsDictByYear[year] = yearDict;
-        });
-        for (var i = 0; i < colorsData.getRowCount(); i++) {
-            var row = colorsData.getRow(i);
-            var rowArr = row.arr;
-            colors[rowArr[0]] = [
-                [rowArr[1], rowArr[2], rowArr[3]],
-                [rowArr[4], rowArr[5], rowArr[6]]
-            ];
-        }
+        circlesList = [];
         var _loop_1 = function () {
             var rankingsForYear = Object.entries(rankingsDictByYear[YEARS[i]]);
             var x = sidePadding + radius / 2 + i * yearHorizontalSpacing;
@@ -271,6 +219,51 @@ var sketch = function (p) {
         for (var i = 0; i < YEARS.length; i++) {
             _loop_1();
         }
+    }
+    p.setup = function () {
+        p.textFont(roboto);
+        p.createCanvas(p.windowWidth, p.windowHeight);
+        conferenceSelect = p.createSelect();
+        conferenceSelect.option("All Conferences");
+        CONFERENCE_LIST.forEach(function (conference) {
+            conferenceSelect.option(conference);
+        });
+        regionSelect = p.createSelect();
+        regionSelect.option("All Regions");
+        REGION_LIST.forEach(function (region) {
+            regionSelect.option(region);
+        });
+        var ranks = data.getColumn("Rank");
+        YEARS.forEach(function (year) {
+            var column = data.getColumn(year);
+            var yearDict = {};
+            column.forEach(function (teamsStr, index) {
+                if (!!teamsStr) {
+                    var rank_1 = parseInt(ranks[index], 10);
+                    yearDict[ranks[index]] = teamsStr;
+                    var teams = teamsStr.split(":");
+                    teams.forEach(function (team) {
+                        var _a;
+                        if (teamDict[team]) {
+                            teamDict[team][year] = rank_1;
+                        }
+                        else {
+                            teamDict[team] = (_a = {}, _a[year] = rank_1, _a);
+                        }
+                    });
+                }
+            });
+            rankingsDictByYear[year] = yearDict;
+        });
+        for (var i = 0; i < colorsData.getRowCount(); i++) {
+            var row = colorsData.getRow(i);
+            var rowArr = row.arr;
+            colors[rowArr[0]] = [
+                [rowArr[1], rowArr[2], rowArr[3]],
+                [rowArr[4], rowArr[5], rowArr[6]]
+            ];
+        }
+        initialSetup();
     };
     p.windowResized = function () {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
@@ -327,14 +320,24 @@ var sketch = function (p) {
             var isInSelectedRegion = selectedRegion && TEAMS[this.team].region == selectedRegion;
             p.strokeWeight(isSelected ? 2 : 1);
             var color = getColor(this.team);
-            var drawRadius = isSelected ? this.radius + 5 : this.radius;
+            var drawRadius;
+            if (isSelected) {
+                drawRadius = this.radius + 5;
+            }
+            else if ((isInSelectedConference && !selectedRegion) ||
+                (isInSelectedRegion && !selectedConference) ||
+                (isInSelectedConference && isInSelectedRegion)) {
+                drawRadius = this.radius + 2.5;
+            }
+            else {
+                drawRadius = this.radius;
+            }
             var transparency = (!selectedTeam && !selectedConference && !selectedRegion) ||
                 isSelected ||
                 (isInSelectedConference && !selectedRegion) ||
                 (isInSelectedRegion && !selectedConference) ||
                 (isInSelectedRegion && isInSelectedConference)
-                ?
-                    255
+                ? 255
                 : 150;
             var image = transparency == 255
                 ? teamImages[this.team]
